@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-
 export async function POST(req: NextRequest) {
     try {
         const update = await req.json();
@@ -35,9 +34,28 @@ export async function POST(req: NextRequest) {
         const result = await res.json();
 
         // Balas ke user lewat telegram sendMessage
-        let replyText = result.ok
-            ? `✅ ${result.message}\n\nDetail:\n- Deskripsi: ${result.data.description}\n- Jumlah: Rp ${Number(result.data.amount).toLocaleString('id-ID')}\n- Kategori: ${result.data.category}`
-            : `❌ Gagal memproses: ${result.error}` ;
+        let replyText: string;
+        if (result.ok) {
+            const items = result.data ?? [];
+            const itemsArr = Array.isArray(items) ? items : [items];
+
+            const details = itemsArr
+                .map((it: any, idx: number) => {
+                    const icon = it.type === 'income' ? '💰' : it.type === 'expense' ? '💸' : '🔄';
+                    const amt = Number(it.amount);
+                    const amtStr = Number.isFinite(amt) ? `Rp ${amt.toLocaleString('id-ID')}` : String(it.amount ?? '-');
+                    const category = it.category ?? 'Lainnya';
+                    const desc = it.description ?? '-';
+                    const now = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    return `${idx + 1}. ${icon} <b>${desc}</b>\n   💵 ${amtStr} | 📂 ${category}\n   📅 ${now} ⏰ ${time}`;
+                })
+                .join('\n\n');
+
+            replyText = `✅ ${result.message}\n\n<b>Detail Transaksi:</b>\n${details}`;
+        } else {
+            replyText = `❌ Gagal memproses: ${result.error}`;
+        }
 
         await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: 'POST',
