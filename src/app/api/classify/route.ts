@@ -45,9 +45,10 @@ export async function POST(req: NextRequest) {
 
         })();
 
-        // Pastikan JSON
                 console.log('RAW:', JSON.stringify(raw));
         console.log('CLEANED:', JSON.stringify(cleaned));
+        
+        // Pastikan JSON
         const parsed = JSON.parse(cleaned);
 
         //normalize ke array (support 1 objek atau banyak objek)
